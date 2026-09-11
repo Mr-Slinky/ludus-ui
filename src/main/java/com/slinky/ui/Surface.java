@@ -12,9 +12,10 @@ import java.awt.image.BufferedImage;
  * pieces {@code vScale} times, so each call to {@link #increaseWidth()} or {@link #increaseHeight()} adds the
  * width or height of one middle piece to the panel.
  * <p>
- * A caller creates a panel from {@link #wood(int, int)}, {@link #regularPaper(int, int)} or
- * {@link #specialPaper(int, int)} and adds it to a container. The panel reports the room it needs through
- * {@link #getPreferredSize()}. Whatever is behind the panel shows through the see-through parts of the image.
+ * A caller creates a panel from {@link #wood(int, int)}, {@link #regularPaper(int, int)},
+ * {@link #specialPaper(int, int)} or {@link #banner(int, int)} and adds it to a container. The panel reports
+ * the room it needs through {@link #getPreferredSize()}. Whatever is behind the panel shows through the
+ * see-through parts of the image.
  *
  * <pre>{@code
  * var table = Surface.wood(3, 1);    // preferred size 360 x 252
@@ -83,6 +84,21 @@ public class Surface extends JPanel {
         return new Surface(horizontalScale, verticalScale, Type.SPECIAL_PAPER.getPath());
     }
 
+    /**
+     * Creates a panel drawn from the banner image. The smallest panel, {@code banner(0, 0)}, is 184 by 179
+     * pixels and draws only the four corners.
+     *
+     * @param horizontalScale the number of middle columns, 0 or more
+     * @param verticalScale   the number of middle rows, 0 or more
+     *
+     * @return a new panel
+     *
+     * @throws IllegalArgumentException if either scale is negative
+     */
+    public static Surface banner(int horizontalScale, int verticalScale) {
+        return new Surface(horizontalScale, verticalScale, Type.BANNER.getPath());
+    }
+
     // ========================================================================================== \\
     //                                           Nested                                           \\
     // ========================================================================================== \\
@@ -98,7 +114,10 @@ public class Surface extends JPanel {
         SPECIAL_PAPER("papers/specialpaper.png"),
 
         /** A wooden table top with a wooden frame and metal corner caps. */
-        WOOD("wood-table/woodtable.png");
+        WOOD("wood-table/woodtable.png"),
+
+        /** A parchment scroll whose bottom corners roll up. */
+        BANNER("banners/banner.png");
 
         private static final String ROOT_DIR = "/assets/ui-elements/";
 

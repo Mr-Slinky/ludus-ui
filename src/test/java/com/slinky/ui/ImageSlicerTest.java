@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  *
  * <p>
  * <b>TDD state.</b> Written after {@code ImageSlicer}, to pin its behaviour as it stands. Covered: the regions of
- * the wood, regular paper and special paper images; grids of 1 by 1, 2 by 4, 3 by 3 and 5 by 2; the three counts;
+ * the wood, regular paper, special paper and banner images; grids of 1 by 1, 2 by 4, 3 by 3 and 5 by 2; the three counts;
  * pieces of uneven size in one column; pieces touching the image edges; a stray pixel touching a piece, clear of
  * both pieces, and fully transparent; a grid size that differs from the image; row and column counts below 1; a
  * null image; a fully transparent image; out-of-range region indices; and a fresh {@link Rectangle} per call.
@@ -51,6 +51,7 @@ class ImageSlicerTest {
             WOOD,          44, 84, 192, 64, 320, 84,  43, 85, 192, 64, 320, 103
             REGULAR_PAPER, 12, 52, 128, 64, 256, 52,  20, 44, 128, 64, 256,  45
             SPECIAL_PAPER,  9, 55, 128, 64, 256, 55,  20, 44, 128, 64, 256,  43
+            BANNER,        28,100, 192, 64, 320, 84,  60, 68, 192, 64, 320, 111
             """)
     void testScan_withValidArgs_ReturnsRegionsMeasuredFromAssets(Type type,
             int x0, int w0, int x1, int w1, int x2, int w2,
