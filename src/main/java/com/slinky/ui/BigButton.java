@@ -14,6 +14,9 @@ import java.awt.*;
  * The pressed image sits lower and slightly wider than the regular one on the canvas the two share. The button
  * draws each image at its place on that canvas, so the button sinks when pressed. It centres the label on the image
  * it is showing, so the label sinks with it.
+ * <p>
+ * The label is drawn in Pixelify Sans Bold at 24 points, a font bundled with the library. A caller replaces it on
+ * one button with {@link #setFont(Font)}.
  *
  * <pre>{@code
  * var play = BigButton.blue("Play", 1, 0);    // preferred size 164 x 96
@@ -33,6 +36,10 @@ public class BigButton extends JButton {
     //                                           Static                                           \\
     // ========================================================================================== \\
     private static final int GRID_SIZE = 3; // Every big button image is three rows of three pieces.
+
+    // Loaded once and shared by every big button. A caller can still replace it on one button with setFont.
+    private static final Font LABEL_FONT = Resources.readFont("/assets/fonts/pixelify-sans/PixelifySans-Bold.ttf")
+                                                    .deriveFont(24f);
 
     /**
      * Creates a blue button. The smallest button, {@code blue(text, 0, 0)}, is 100 by 96 pixels and draws only the
@@ -158,6 +165,8 @@ public class BigButton extends JButton {
         var top           = Math.min(regularOrigin.y, pressedOrigin.y);
         this.regularOffset = new Offset(regularOrigin.x - left, regularOrigin.y - top);
         this.pressedOffset = new Offset(pressedOrigin.x - left, pressedOrigin.y - top);
+
+        setFont(LABEL_FONT);
 
         // Switches off everything the look and feel draws apart from the label, which paintComponent replaces.
         setContentAreaFilled(false);
