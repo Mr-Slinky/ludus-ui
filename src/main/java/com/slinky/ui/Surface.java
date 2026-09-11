@@ -17,7 +17,7 @@ import java.awt.image.BufferedImage;
  * {@link #getPreferredSize()}. Whatever is behind the panel shows through the see-through parts of the image.
  *
  * <pre>{@code
- * var table = Display.wood(3, 1);    // preferred size 360 x 252
+ * var table = Surface.wood(3, 1);    // preferred size 360 x 252
  * frame.add(table);
  * frame.pack();
  *
@@ -31,7 +31,7 @@ import java.awt.image.BufferedImage;
  *         Last modified: 2026-09-11
  * @since 1.0.0
  */
-public class Display extends JPanel {
+public class Surface extends JPanel {
 
     // ========================================================================================== \\
     //                                           Static                                           \\
@@ -49,8 +49,8 @@ public class Display extends JPanel {
      *
      * @throws IllegalArgumentException if either scale is negative
      */
-    public static Display wood(int horizontalScale, int verticalScale) {
-        return new Display(horizontalScale, verticalScale, Type.WOOD.getPath());
+    public static Surface wood(int horizontalScale, int verticalScale) {
+        return new Surface(horizontalScale, verticalScale, Type.WOOD.getPath());
     }
 
     /**
@@ -64,8 +64,8 @@ public class Display extends JPanel {
      *
      * @throws IllegalArgumentException if either scale is negative
      */
-    public static Display regularPaper(int horizontalScale, int verticalScale) {
-        return new Display(horizontalScale, verticalScale, Type.REGULAR_PAPER.getPath());
+    public static Surface regularPaper(int horizontalScale, int verticalScale) {
+        return new Surface(horizontalScale, verticalScale, Type.REGULAR_PAPER.getPath());
     }
 
     /**
@@ -79,8 +79,8 @@ public class Display extends JPanel {
      *
      * @throws IllegalArgumentException if either scale is negative
      */
-    public static Display specialPaper(int horizontalScale, int verticalScale) {
-        return new Display(horizontalScale, verticalScale, Type.SPECIAL_PAPER.getPath());
+    public static Surface specialPaper(int horizontalScale, int verticalScale) {
+        return new Surface(horizontalScale, verticalScale, Type.SPECIAL_PAPER.getPath());
     }
 
     // ========================================================================================== \\
@@ -143,7 +143,7 @@ public class Display extends JPanel {
      *                                             image does not contain nine pieces in three rows and three
      *                                             columns with fully transparent gaps between them
      */
-    Display(int hScale, int vScale, String srcPath) {
+    Surface(int hScale, int vScale, String srcPath) {
         this(hScale, vScale, SliceRenderer.load(srcPath, GRID_SIZE, GRID_SIZE));
     }
 
@@ -159,11 +159,11 @@ public class Display extends JPanel {
      *                                  not contain nine pieces in three rows and three columns with fully
      *                                  transparent gaps between them
      */
-    Display(int hScale, int vScale, BufferedImage src) {
+    Surface(int hScale, int vScale, BufferedImage src) {
         this(hScale, vScale, new SliceRenderer(src, GRID_SIZE, GRID_SIZE));
     }
 
-    private Display(int hScale, int vScale, SliceRenderer renderer) {
+    private Surface(int hScale, int vScale, SliceRenderer renderer) {
         super(true); // double buffered = true
         if (hScale < 0 || vScale < 0) {
             throw new IllegalArgumentException(
