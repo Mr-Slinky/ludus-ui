@@ -1,6 +1,8 @@
 package com.slinky.ui;
 
 import javax.imageio.ImageIO;
+import java.awt.Font;
+import java.awt.FontFormatException;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -115,6 +117,33 @@ final class Resources {
             return ImageIO.read(in);
         } catch (IOException ex) {
             throw new UncheckedIOException("Failed to read image at " + path, ex);
+        }
+    }
+
+    /**
+     * Reads the TrueType font at the given path, which {@link #getResource(String)} resolves.
+     * <p>
+     * The returned font is 1 point in size. A caller derives the size it draws at, for example with
+     * {@code readFont(path).deriveFont(24f)}. The font works from inside a jar, because the method reads it as a
+     * stream rather than as a file on disk.
+     *
+     * @param path the resource path, with or without a leading slash
+     *
+     * @return the font, at a size of 1 point
+     *
+     * @throws NullPointerException      if {@code path} is null
+     * @throws IllegalArgumentException  if {@code path} is empty or contains only whitespace, or if the resource is
+     *                                   not a TrueType font
+     * @throws ResourceNotFoundException if the classpath contains no resource at {@code path}
+     * @throws UncheckedIOException      if reading the resource fails
+     */
+    public static Font readFont(String path) {
+        try (var in = getResource(path)) {
+            return Font.createFont(Font.TRUETYPE_FONT, in);
+        } catch (FontFormatException ex) {
+            throw new IllegalArgumentException(path + " is not a TrueType font", ex);
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to read font at " + path, ex);
         }
     }
 

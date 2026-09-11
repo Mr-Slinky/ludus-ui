@@ -3,6 +3,7 @@ package com.slinky.ui;
 import com.slinky.ui.Resources.ResourceNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
@@ -20,9 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * {@code REGULAR_PAPER}, read straight from the classpath.
  *
  * <p>
- * <b>TDD state.</b> Written before {@code normalise} and {@code readImage} were implemented. Covered: a leading
- * slash, no leading slash, backslashes, mixed slashes and repeated slashes; a path with no resource behind it; a
- * null path; empty and blank paths; and reading an image, with and without a resource behind the path.
+ * <b>TDD state.</b> Written before {@code normalise}, {@code readImage} and {@code readFont} were implemented.
+ * Covered: a leading slash, no leading slash, backslashes, mixed slashes and repeated slashes; a path with no
+ * resource behind it; a null path; empty and blank paths; reading an image, with and without a resource behind the
+ * path; and reading each of the four Pixelify Sans weights, a missing font, and a file that is not a font.
  *
  * @author Claude Code
  * @version 1.0.0
@@ -91,6 +93,36 @@ class ResourcesTest {
         var ex = assertThrows(ResourceNotFoundException.class, () -> Resources.readImage("/assets/missing.png"));
 
         assertEquals("/assets/missing.png could not be located", ex.getMessage());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "PixelifySans-Regular.ttf,  Pixelify Sans Regular",
+            "PixelifySans-Medium.ttf,   Pixelify Sans Medium",
+            "PixelifySans-SemiBold.ttf, Pixelify Sans SemiBold",
+            "PixelifySans-Bold.ttf,     Pixelify Sans Bold"
+    })
+    void testReadFont_withValidArgs_ReturnsFontAtSizeOne(String fileName, String expectedFontName) {
+        var font = Resources.readFont("/assets/fonts/pixelify-sans/" + fileName);
+
+        assertAll(
+                () -> assertEquals(expectedFontName, font.getFontName()),
+                () -> assertEquals(1f, font.getSize2D())
+        );
+    }
+
+    @Test
+    void testReadFont_withInvalidArgs_ThrowsResourceNotFoundException() {
+        var ex = assertThrows(ResourceNotFoundException.class, () -> Resources.readFont("/assets/missing.ttf"));
+
+        assertEquals("/assets/missing.ttf could not be located", ex.getMessage());
+    }
+
+    @Test
+    void testReadFont_withEdgeCaseArgs_ThrowsIllegalArgumentExceptionForFileThatIsNotAFont() {
+        var ex = assertThrows(IllegalArgumentException.class, () -> Resources.readFont(REGULAR_PAPER));
+
+        assertEquals(REGULAR_PAPER + " is not a TrueType font", ex.getMessage());
     }
 
     private static byte[] readBytes(String absolutePath) throws IOException {
