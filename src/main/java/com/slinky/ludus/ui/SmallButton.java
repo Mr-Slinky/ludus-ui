@@ -16,10 +16,17 @@ import static java.util.Objects.requireNonNull;
  * A caller picks the icon drawn on the button from {@link Symbol}. The button draws the icon at its own size,
  * centred on the top of the button in the image it is showing, above the base that the art shows underneath.
  * The icon therefore sinks with the button when pressed.
+ * <p>
+ * Every factory method also takes an angle in radians, and the button turns the icon clockwise by that angle.
+ * The angle must be a whole number of quarter turns, such as {@code Math.PI / 2} or {@code -Math.PI}, so that
+ * every pixel of the icon lands on a whole pixel of the button. The button accepts the tiny rounding error in a
+ * value such as {@code Math.toRadians(270)}.
  *
  * <pre>{@code
- * var close = SmallButton.redSquare(SmallButton.Symbol.CROSS);    // preferred size 128 x 128
+ * var close = SmallButton.redSquare(SmallButton.Symbol.CROSS, 0);    // preferred size 128 x 128
  * close.addActionListener(e -> dispose());
+ *
+ * var up = SmallButton.blueRound(SmallButton.Symbol.LEFT_ARROW, Math.PI / 2);    // the arrow points up
  * }</pre>
  *
  * @author Kheagen Haskins
@@ -44,56 +51,70 @@ public class SmallButton extends JButton {
     // exact centre looks slightly high.
     private static final int ICON_DROP = 3;
 
+    private static final double QUARTER_TURN = Math.PI / 2;
+
+    // How far an angle may stray from a whole number of quarter turns and still count as one. Rounding in a value
+    // such as Math.toRadians(270) stays far below this.
+    private static final double TOLERANCE = 1e-9;
+
     /**
-     * Creates a blue round button showing the given icon.
+     * Creates a blue round button showing the given icon, turned clockwise by {@code radians}.
      *
-     * @param symbol the icon drawn on the button
+     * @param symbol  the icon drawn on the button
+     * @param radians the clockwise angle of the icon, a whole number of quarter turns
      *
      * @return a new button
      *
-     * @throws NullPointerException if {@code symbol} is null
+     * @throws NullPointerException     if {@code symbol} is null
+     * @throws IllegalArgumentException if {@code radians} is not a multiple of {@code Math.PI / 2}
      */
     public static SmallButton blueRound(Symbol symbol, double radians) {
-        return new SmallButton(Colour.BLUE, Type.ROUND, symbol);
+        return new SmallButton(Colour.BLUE, Type.ROUND, symbol, radians);
     }
 
     /**
-     * Creates a blue square button showing the given icon.
+     * Creates a blue square button showing the given icon, turned clockwise by {@code radians}.
      *
-     * @param symbol the icon drawn on the button
+     * @param symbol  the icon drawn on the button
+     * @param radians the clockwise angle of the icon, a whole number of quarter turns
      *
      * @return a new button
      *
-     * @throws NullPointerException if {@code symbol} is null
+     * @throws NullPointerException     if {@code symbol} is null
+     * @throws IllegalArgumentException if {@code radians} is not a multiple of {@code Math.PI / 2}
      */
     public static SmallButton blueSquare(Symbol symbol, double radians) {
-        return new SmallButton(Colour.BLUE, Type.SQUARE, symbol);
+        return new SmallButton(Colour.BLUE, Type.SQUARE, symbol, radians);
     }
 
     /**
-     * Creates a red round button showing the given icon.
+     * Creates a red round button showing the given icon, turned clockwise by {@code radians}.
      *
-     * @param symbol the icon drawn on the button
+     * @param symbol  the icon drawn on the button
+     * @param radians the clockwise angle of the icon, a whole number of quarter turns
      *
      * @return a new button
      *
-     * @throws NullPointerException if {@code symbol} is null
+     * @throws NullPointerException     if {@code symbol} is null
+     * @throws IllegalArgumentException if {@code radians} is not a multiple of {@code Math.PI / 2}
      */
     public static SmallButton redRound(Symbol symbol, double radians) {
-        return new SmallButton(Colour.RED, Type.ROUND, symbol);
+        return new SmallButton(Colour.RED, Type.ROUND, symbol, radians);
     }
 
     /**
-     * Creates a red square button showing the given icon.
+     * Creates a red square button showing the given icon, turned clockwise by {@code radians}.
      *
-     * @param symbol the icon drawn on the button
+     * @param symbol  the icon drawn on the button
+     * @param radians the clockwise angle of the icon, a whole number of quarter turns
      *
      * @return a new button
      *
-     * @throws NullPointerException if {@code symbol} is null
+     * @throws NullPointerException     if {@code symbol} is null
+     * @throws IllegalArgumentException if {@code radians} is not a multiple of {@code Math.PI / 2}
      */
     public static SmallButton redSquare(Symbol symbol, double radians) {
-        return new SmallButton(Colour.RED, Type.SQUARE, symbol);
+        return new SmallButton(Colour.RED, Type.SQUARE, symbol, radians);
     }
 
     // ========================================================================================== \\
@@ -208,16 +229,18 @@ public class SmallButton extends JButton {
     //                                       Constructor(s)                                       \\
     // ========================================================================================== \\
     /**
-     * Creates a button in the given colour and shape, showing the given icon.
+     * Creates a button in the given colour and shape, showing the given icon turned clockwise by {@code radians}.
      *
-     * @param colour the colour of the button
-     * @param type   the shape of the button
-     * @param symbol the icon drawn on the button
+     * @param colour  the colour of the button
+     * @param type    the shape of the button
+     * @param symbol  the icon drawn on the button
+     * @param radians the clockwise angle of the icon, a whole number of quarter turns
      *
-     * @throws NullPointerException if {@code symbol} is null
+     * @throws NullPointerException     if {@code symbol} is null
+     * @throws IllegalArgumentException if {@code radians} is not a multiple of {@code Math.PI / 2}
      */
-    SmallButton(Colour colour, Type type, Symbol symbol) {
-        super(new ImageIcon(Resources.readImage(requireNonNull(symbol, "symbol must not be null").getPath())));
+    SmallButton(Colour colour, Type type, Symbol symbol, double radians) {
+        super(buildIcon(symbol, radians));
         this.regularImage = Resources.readImage(buildPath(colour, type, "regular"));
         this.pressedImage = Resources.readImage(buildPath(colour, type, "pressed"));
 
@@ -301,6 +324,92 @@ public class SmallButton extends JButton {
     // ========================================================================================== \\
     //                                       Helper Methods                                       \\
     // ========================================================================================== \\
+    /**
+     * Reads the image of a symbol and returns it as an icon, turned clockwise by {@code radians}.
+     *
+     * @param symbol  the icon drawn on the button
+     * @param radians the clockwise angle of the icon, a whole number of quarter turns
+     *
+     * @return a new icon
+     *
+     * @throws NullPointerException     if {@code symbol} is null
+     * @throws IllegalArgumentException if {@code radians} is not a multiple of {@code Math.PI / 2}
+     */
+    private static ImageIcon buildIcon(Symbol symbol, double radians) {
+        requireNonNull(symbol, "symbol must not be null");
+        var quarterTurns = countQuarterTurns(radians);
+
+        return new ImageIcon(turnClockwise(Resources.readImage(symbol.getPath()), quarterTurns));
+    }
+
+    /**
+     * Returns the number of clockwise quarter turns in an angle, from 0 to 3. A negative angle turns
+     * anticlockwise, which equals the matching number of clockwise turns.
+     *
+     * <pre>{@code
+     * Math.PI / 2          ->  1
+     * Math.toRadians(270)  ->  3
+     * 2 * Math.PI          ->  0
+     * -Math.PI / 2         ->  3
+     * Math.PI / 4          ->  throws IllegalArgumentException
+     * }</pre>
+     *
+     * @param radians the angle, a whole number of quarter turns
+     *
+     * @return the number of clockwise quarter turns, from 0 to 3
+     *
+     * @throws IllegalArgumentException if {@code radians} is more than {@code TOLERANCE} away from a multiple of
+     *                                  {@code Math.PI / 2}, or is NaN or infinite
+     */
+    private static int countQuarterTurns(double radians) {
+        var quarterTurns = Math.round(radians / QUARTER_TURN);
+        if (!Double.isFinite(radians) || Math.abs(radians - (quarterTurns * QUARTER_TURN)) > TOLERANCE) {
+            throw new IllegalArgumentException("radians must be a multiple of Math.PI / 2, got %s".formatted(radians));
+        }
+
+        return Math.floorMod(quarterTurns, 4);
+    }
+
+    /**
+     * Returns a copy of an image turned clockwise by the given number of quarter turns. Each pixel moves to a
+     * whole pixel of the copy, so the copy contains exactly the pixels of the original. One or three turns swap
+     * the width and the height.
+     *
+     * @param image        the image to turn
+     * @param quarterTurns the number of clockwise quarter turns, from 0 to 3
+     *
+     * @return a new image of type {@link BufferedImage#TYPE_INT_ARGB}
+     *
+     * @throws IllegalArgumentException if {@code quarterTurns} is outside 0 to 3
+     */
+    private static BufferedImage turnClockwise(BufferedImage image, int quarterTurns) {
+        var width    = image.getWidth();
+        var height   = image.getHeight();
+        var sideways = quarterTurns % 2 == 1;
+        var turned   = new BufferedImage(
+                sideways ? height : width,
+                sideways ? width : height,
+                BufferedImage.TYPE_INT_ARGB
+        );
+
+        // Copies the pixel at (x, y) to the place a clockwise turn moves it to. One turn sends the top-left pixel
+        // to the top-right, two to the bottom-right, and three to the bottom-left.
+        for (var y = 0; y < height; y++) {
+            for (var x = 0; x < width; x++) {
+                var argb = image.getRGB(x, y);
+                switch (quarterTurns) {
+                    case 0  -> turned.setRGB(x, y, argb);
+                    case 1  -> turned.setRGB(height - 1 - y, x, argb);
+                    case 2  -> turned.setRGB(width - 1 - x, height - 1 - y, argb);
+                    case 3  -> turned.setRGB(y, width - 1 - x, argb);
+                    default -> throw new IllegalArgumentException("quarterTurns must be 0 to 3, got %d".formatted(quarterTurns));
+                }
+            }
+        }
+
+        return turned;
+    }
+
     /**
      * Returns the part of an image that shows the top of the button, which is the bounds of every visible pixel
      * without the base rows at the bottom. For the regular images this runs from row 17 to row 96.
