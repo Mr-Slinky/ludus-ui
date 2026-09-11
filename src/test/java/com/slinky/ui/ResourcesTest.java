@@ -1,0 +1,84 @@
+package com.slinky.ui;
+
+import com.slinky.ui.Resources.ResourceNotFoundException;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+
+import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+/**
+ * Exercises {@link Resources}, pinning how {@link Resources#getResource(String)} resolves a path and how it
+ * rejects a path it cannot open.
+ * <p>
+ * Every accepted spelling of a path is checked by reading the bytes it opens and comparing them with the bytes of
+ * {@code REGULAR_PAPER}, read straight from the classpath.
+ *
+ * <p>
+ * <b>TDD state.</b> Written before {@code normalise} was implemented. Covered: a leading slash, no leading slash,
+ * backslashes, mixed slashes and repeated slashes; a path with no resource behind it; a null path; and empty and
+ * blank paths.
+ *
+ * @author Claude Code
+ * @version 1.0.0
+ *         <p>
+ *         Last modified: 2026-09-11
+ * @since 1.0.0
+ */
+class ResourcesTest {
+
+    private static final String REGULAR_PAPER = "/assets/ui-elements/papers/regularpaper.png";
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+            "/assets/ui-elements/papers/regularpaper.png",
+            "assets/ui-elements/papers/regularpaper.png",
+            "assets\\ui-elements\\papers\\regularpaper.png",
+            "\\assets\\ui-elements\\papers\\regularpaper.png",
+            "//assets//ui-elements///papers/regularpaper.png",
+            "assets/ui-elements\\papers//regularpaper.png"
+    })
+    void testGetResource_withValidArgs_OpensResourceFromClasspathRoot(String path) throws IOException {
+        var expected = readBytes(REGULAR_PAPER);
+
+        byte[] actual;
+        try (var in = Resources.getResource(path)) {
+            actual = in.readAllBytes();
+        }
+
+        assertArrayEquals(expected, actual);
+    }
+
+    @Test
+    void testGetResource_withInvalidArgs_ThrowsResourceNotFoundException() {
+        var ex = assertThrows(ResourceNotFoundException.class, () -> Resources.getResource("/assets/missing.png"));
+
+        assertEquals("/assets/missing.png could not be located", ex.getMessage());
+    }
+
+    @Test
+    void testGetResource_withNullArgs_ThrowsNullPointerException() {
+        var ex = assertThrows(NullPointerException.class, () -> Resources.getResource(null));
+
+        assertEquals("path must not be null", ex.getMessage());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "\t"})
+    void testGetResource_withEmptyArgs_ThrowsIllegalArgumentException(String path) {
+        var ex = assertThrows(IllegalArgumentException.class, () -> Resources.getResource(path));
+
+        assertEquals("path must not be blank", ex.getMessage());
+    }
+
+    private static byte[] readBytes(String absolutePath) throws IOException {
+        try (var in = ResourcesTest.class.getResourceAsStream(absolutePath)) {
+            return in.readAllBytes();
+        }
+    }
+
+}

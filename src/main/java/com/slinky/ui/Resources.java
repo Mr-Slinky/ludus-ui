@@ -1,6 +1,9 @@
 package com.slinky.ui;
 
 import java.io.InputStream;
+import java.util.regex.Pattern;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Opens files that are bundled with the application on the classpath.
@@ -20,6 +23,11 @@ import java.io.InputStream;
  * @since 1.0.0
  */
 final class Resources {
+
+    // ========================================================================================== \\
+    //                                           Static                                           \\
+    // ========================================================================================== \\
+    private static final Pattern REPEATED_SLASHES = Pattern.compile("/{2,}");
 
     // ========================================================================================== \\
     //                                           Nested                                           \\
@@ -65,15 +73,18 @@ final class Resources {
     /**
      * Opens the classpath resource at the given path and returns it as a stream.
      * <p>
-     * A path that starts with {@code /} is resolved from the root of the classpath. Any other path is resolved
-     * relative to the {@code com.slinky.ui} package, so {@code "icon.png"} opens
-     * {@code com/slinky/ui/icon.png}. The caller owns the returned stream and must close it.
+     * Every path is resolved from the root of the classpath, whether or not it starts with {@code /}.
+     * Backslashes count as forward slashes, and repeated slashes count as one, so
+     * {@code "assets\\ui-elements\\papers\\regularpaper.png"} and
+     * {@code "//assets//ui-elements/papers/regularpaper.png"} both open
+     * {@code /assets/ui-elements/papers/regularpaper.png}. The caller owns the returned stream and must close it.
      *
-     * @param path the resource path, either absolute (starting with {@code /}) or relative to this package
+     * @param path the resource path, with or without a leading slash
      *
      * @return an open stream of the resource, never null
      *
      * @throws NullPointerException      if {@code path} is null
+     * @throws IllegalArgumentException  if {@code path} is empty or contains only whitespace
      * @throws ResourceNotFoundException if the classpath contains no resource at {@code path}
      */
     public static InputStream getResource(String path) {
@@ -86,8 +97,35 @@ final class Resources {
     // ========================================================================================== \\
     //                                       Helper Methods                                       \\
     // ========================================================================================== \\
+    /**
+     * Rewrites a resource path into the absolute form that {@link Class#getResourceAsStream(String)} resolves from
+     * the root of the classpath. The method turns backslashes into forward slashes, collapses repeated slashes into
+     * one, and adds a leading slash where the path has none.
+     *
+     * <pre>{@code
+     * "/assets/papers/a.png"    ->  "/assets/papers/a.png"
+     * "assets/papers/a.png"     ->  "/assets/papers/a.png"
+     * "assets\\papers\\a.png"   ->  "/assets/papers/a.png"
+     * "//assets//papers/a.png"  ->  "/assets/papers/a.png"
+     * }</pre>
+     *
+     * @param path the resource path as the caller wrote it
+     *
+     * @return the path with forward slashes only, no repeated slashes, and one leading slash
+     *
+     * @throws NullPointerException     if {@code path} is null
+     * @throws IllegalArgumentException if {@code path} is empty or contains only whitespace
+     */
     private static String normalise(String path) {
-        return path; // TODO
+        requireNonNull(path, "path must not be null");
+        if (path.isBlank()) {
+            throw new IllegalArgumentException("path must not be blank");
+        }
+
+        var forwardSlashes = path.replace('\\', '/');
+        var singleSlashes  = REPEATED_SLASHES.matcher(forwardSlashes).replaceAll("/");
+
+        return singleSlashes.startsWith("/") ? singleSlashes : "/" + singleSlashes;
     }
 
 }
