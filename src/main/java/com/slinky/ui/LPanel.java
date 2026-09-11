@@ -17,9 +17,9 @@ import java.util.Arrays;
  * pieces {@code vScale} times, so each call to {@link #increaseWidth()} or {@link #increaseHeight()} adds the
  * width or height of one middle piece to the panel.
  * <p>
- * A caller creates a panel from {@link #wood(int, int)} or {@link #paper(int, int)} and adds it to a container.
- * The panel reports the room it needs through {@link #getPreferredSize()}, and paints a black background behind
- * the see-through parts of the image.
+ * A caller creates a panel from {@link #wood(int, int)}, {@link #regularPaper(int, int)} or
+ * {@link #specialPaper(int, int)} and adds it to a container. The panel reports the room it needs through
+ * {@link #getPreferredSize()}. Whatever is behind the panel shows through the see-through parts of the image.
  *
  * <pre>{@code
  * var table = LPanel.wood(3, 1);    // preferred size 360 x 252
@@ -57,8 +57,8 @@ public class LPanel extends JPanel {
     }
 
     /**
-     * Creates a panel drawn from the regular paper image. The smallest panel, {@code paper(0, 0)}, is 104 by 89
-     * pixels and draws only the four corners.
+     * Creates a panel drawn from the regular paper image. The smallest panel, {@code regularPaper(0, 0)}, is
+     * 104 by 89 pixels and draws only the four corners.
      *
      * @param horizontalScale the number of middle columns, 0 or more
      * @param verticalScale   the number of middle rows, 0 or more
@@ -67,8 +67,23 @@ public class LPanel extends JPanel {
      *
      * @throws IllegalArgumentException if either scale is negative
      */
-    public static LPanel paper(int horizontalScale, int verticalScale) {
+    public static LPanel regularPaper(int horizontalScale, int verticalScale) {
         return new LPanel(horizontalScale, verticalScale, Type.REGULAR_PAPER.getPath());
+    }
+
+    /**
+     * Creates a panel drawn from the special paper image. The smallest panel, {@code specialPaper(0, 0)}, is
+     * 110 by 87 pixels and draws only the four corners.
+     *
+     * @param horizontalScale the number of middle columns, 0 or more
+     * @param verticalScale   the number of middle rows, 0 or more
+     *
+     * @return a new panel
+     *
+     * @throws IllegalArgumentException if either scale is negative
+     */
+    public static LPanel specialPaper(int horizontalScale, int verticalScale) {
+        return new LPanel(horizontalScale, verticalScale, Type.SPECIAL_PAPER.getPath());
     }
 
     // ========================================================================================== \\
@@ -161,10 +176,9 @@ public class LPanel extends JPanel {
         this.hScale = hScale;
         this.vScale = vScale;
 
-        // A JPanel is opaque by default, so super.paintComponent() fills the whole panel with this colour
-        // before
-        // paintComponent() draws the pieces on top.
-        setBackground(Color.BLACK);
+        // Tells Swing to draw whatever is behind the panel first, so it shows through the see-through parts of
+        // the image. A JPanel is opaque by default, which would skip that step.
+        setOpaque(false);
     }
 
     // ========================================================================================== \\
@@ -216,13 +230,12 @@ public class LPanel extends JPanel {
     }
 
     /**
-     * Fills the panel with its background colour, then draws every piece at full size from the top-left
-     * corner.
+     * Draws every piece at full size from the top-left corner.
      * <p>
      * Each row of the panel contains the left piece, {@code hScale} copies of the middle piece, and the right
      * piece. The panel contains the top row, {@code vScale} copies of the middle row, and the bottom row. Where
-     * a layout manager gives the panel more room than {@link #getPreferredSize()}, the extra area to the right
-     * and below stays the background colour.
+     * a layout manager gives the panel more room than {@link #getPreferredSize()}, whatever is behind the panel
+     * shows in the extra area to the right and below.
      *
      * @param g the graphics context that Swing passes in for this paint
      */
