@@ -1,7 +1,5 @@
 package com.slinky.ui;
 
-import com.slinky.ui.data.Resources;
-
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;

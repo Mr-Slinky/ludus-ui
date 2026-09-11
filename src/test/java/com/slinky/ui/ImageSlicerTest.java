@@ -1,7 +1,6 @@
 package com.slinky.ui;
 
 import com.slinky.ui.LPanel.Type;
-import com.slinky.ui.data.Resources;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;

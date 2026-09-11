@@ -1,4 +1,4 @@
-package com.slinky.ui.data;
+package com.slinky.ui;
 
 import java.io.InputStream;
 
@@ -19,7 +19,7 @@ import java.io.InputStream;
  *         Last modified: 2026-09-11
  * @since 1.0.0
  */
-public final class Resources {
+final class Resources {
 
     // ========================================================================================== \\
     //                                           Nested                                           \\
@@ -58,7 +58,6 @@ public final class Resources {
     // ========================================================================================== \\
     private Resources() { }
 
-
     // ========================================================================================== \\
     //                                        API Methods                                         \\
     // ========================================================================================== \\
@@ -67,8 +66,8 @@ public final class Resources {
      * Opens the classpath resource at the given path and returns it as a stream.
      * <p>
      * A path that starts with {@code /} is resolved from the root of the classpath. Any other path is resolved
-     * relative to the {@code com.slinky.ui.data} package, so {@code "icon.png"} opens
-     * {@code com/slinky/ui/data/icon.png}. The caller owns the returned stream and must close it.
+     * relative to the {@code com.slinky.ui} package, so {@code "icon.png"} opens
+     * {@code com/slinky/ui/icon.png}. The caller owns the returned stream and must close it.
      *
      * @param path the resource path, either absolute (starting with {@code /}) or relative to this package
      *
