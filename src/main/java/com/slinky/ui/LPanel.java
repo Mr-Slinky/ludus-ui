@@ -1,11 +1,8 @@
 package com.slinky.ui;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.util.Arrays;
 
 /**
  * A {@link JPanel} that draws itself from a 9-slice image, such as a wooden table or a sheet of paper.
@@ -39,6 +36,8 @@ public class LPanel extends JPanel {
     // ========================================================================================== \\
     //                                           Static                                           \\
     // ========================================================================================== \\
+    private static final int GRID_SIZE = 3; // Every panel image is three rows of three pieces.
+
     /**
      * Creates a panel drawn from the wooden table image. The smallest panel, {@code wood(0, 0)}, is 168 by 188
      * pixels and draws only the four corners.
@@ -123,8 +122,7 @@ public class LPanel extends JPanel {
     // ========================================================================================== \\
     //                                           Fields                                           \\
     // ========================================================================================== \\
-    private final BufferedImage src;
-    private final ImageSlicer   slicer;
+    private final Renderer renderer;
 
     private int hScale;
     private int vScale;
@@ -146,7 +144,7 @@ public class LPanel extends JPanel {
      *                                             columns with fully transparent gaps between them
      */
     LPanel(int hScale, int vScale, String srcPath) {
-        this(hScale, vScale, loadImage(srcPath));
+        this(hScale, vScale, Renderer.load(srcPath, GRID_SIZE, GRID_SIZE));
     }
 
     /**
@@ -162,6 +160,10 @@ public class LPanel extends JPanel {
      *                                  transparent gaps between them
      */
     LPanel(int hScale, int vScale, BufferedImage src) {
+        this(hScale, vScale, new Renderer(src, GRID_SIZE, GRID_SIZE));
+    }
+
+    private LPanel(int hScale, int vScale, Renderer renderer) {
         super(true);
         if (hScale < 0 || vScale < 0) {
             throw new IllegalArgumentException(
@@ -169,10 +171,9 @@ public class LPanel extends JPanel {
             );
         }
 
-        this.src    = src;
-        this.slicer = ImageSlicer.scan(src, 3, 3); // A 9-slice image is three rows of three pieces.
-        this.hScale = hScale;
-        this.vScale = vScale;
+        this.renderer = renderer;
+        this.hScale   = hScale;
+        this.vScale   = vScale;
 
         // Tells Swing to draw whatever is behind the panel first, so it shows through the see-through parts of
         // the image. A JPanel is opaque by default, which would skip that step.
@@ -216,15 +217,7 @@ public class LPanel extends JPanel {
      */
     @Override
     public Dimension getPreferredSize() {
-        var width = slicer.getRegion(0, 0).width +
-                    (hScale * slicer.getRegion(0, 1).width) +
-                    slicer.getRegion(0, 2).width;
-
-        var height = slicer.getRegion(0, 0).height +
-                     (vScale * slicer.getRegion(1, 0).height) +
-                     slicer.getRegion(2, 0).height;
-
-        return new Dimension(width, height);
+        return renderer.measure(hScale, vScale);
     }
 
     /**
@@ -240,94 +233,18 @@ public class LPanel extends JPanel {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-
-        var y = 0;
-        for (var row : buildPieceOrder(vScale)) {
-            var x = 0;
-            for (var column : buildPieceOrder(hScale)) {
-                var piece = slicer.getRegion(row, column);
-                drawPiece(g, piece, x, y);
-                x += piece.width;
-            }
-            y += slicer.getRegion(row, 0).height;
-        }
+        renderer.paint(g, hScale, vScale);
     }
 
     // ========================================================================================== \\
     //                                       Helper Methods                                       \\
     // ========================================================================================== \\
     /**
-     * Reads the image at the given classpath path.
-     *
-     * @param path the classpath path of the image
-     *
-     * @return the decoded image, or null where no installed {@link ImageIO} reader supports the file's format
-     *
-     * @throws Resources.ResourceNotFoundException if the classpath contains no file at {@code path}
-     * @throws RuntimeException                    if reading the file fails
-     */
-    private static BufferedImage loadImage(String path) {
-        var in = Resources.getResource(path);
-        try (in) {
-            return ImageIO.read(in);
-        } catch (IOException ex) {
-            throw new RuntimeException("Failed to load image at" + path, ex);
-        }
-    }
-
-    /**
      * Makes Swing lay the panel out again and redraw it, after {@code hScale} or {@code vScale} changes.
      */
     private void refreshSize() {
         revalidate(); // Tells the layout manager to call getPreferredSize() again and redo the layout.
         repaint();    // Asks Swing to call paintComponent() again soon.
-    }
-
-    /**
-     * Returns the source column (or source row) of each piece across the panel, from left to right (or top to
-     * bottom).
-     * <p>
-     * The first entry is always 0 and the last is always 2, with {@code middleCount} entries of 1 between
-     * them.
-     *
-     * <pre>{@code
-     * buildPieceOrder(0)  ->  [0, 2]
-     * buildPieceOrder(3)  ->  [0, 1, 1, 1, 2]
-     * }</pre>
-     *
-     * @param middleCount the number of middle pieces, which is {@code hScale} or {@code vScale}
-     *
-     * @return the source column or source row for each piece, in drawing order
-     */
-    private static int[] buildPieceOrder(int middleCount) {
-        var order = new int[middleCount + 2];
-        Arrays.fill(order, 1, order.length - 1, 1);
-        order[order.length - 1] = 2;
-
-        return order;
-    }
-
-    /**
-     * Copies one piece of {@code src} onto the panel at full size, with its top-left corner at ({@code x},
-     * {@code y}).
-     * <p>
-     * The {@code drawImage} overload used here takes two pairs of corners, each given as top-left then
-     * bottom-right. The first pair places the piece on the panel, and the second pair selects the part of
-     * {@code src} to copy. The last argument, an {@code ImageObserver}, only matters for images that are still
-     * loading. A {@code BufferedImage} is always fully loaded, so the method passes null.
-     *
-     * @param g     the graphics context that {@code paintComponent} received
-     * @param piece the position and size of the piece within {@code src}
-     * @param x     the panel x at which the left edge of the piece is drawn
-     * @param y     the panel y at which the top edge of the piece is drawn
-     */
-    private void drawPiece(Graphics g, Rectangle piece, int x, int y) {
-        g.drawImage(
-                src,
-                x, y, x + piece.width, y + piece.height,
-                piece.x, piece.y, piece.x + piece.width, piece.y + piece.height,
-                null
-        );
     }
 
 }
