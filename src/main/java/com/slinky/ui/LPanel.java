@@ -172,7 +172,7 @@ public class LPanel extends JPanel {
         }
 
         this.src    = src;
-        this.slicer = ImageSlicer.scan(src);
+        this.slicer = ImageSlicer.scan(src, 3, 3); // A 9-slice image is three rows of three pieces.
         this.hScale = hScale;
         this.vScale = vScale;
 

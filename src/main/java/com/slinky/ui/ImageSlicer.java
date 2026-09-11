@@ -8,24 +8,25 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 /**
- * The nine source regions of a 9-slice image, stored as three column spans and three row spans.
+ * The source regions of an image whose pieces are laid out in a grid, stored as column spans and row spans.
  * <p>
- * The image must contain nine pieces arranged in three rows and three columns, with a fully transparent gap
- * between each pair of neighbouring rows and each pair of neighbouring columns. A column span starts at the
- * leftmost visible pixel among the three pieces in that column and ends at the rightmost, and a row span does
- * the same from top to bottom. Every region in one column therefore has the same x and width, and every region
- * in one row has the same y and height, even where one piece is smaller than its neighbours.
+ * The image must contain its pieces in rows and columns, with a fully transparent gap between each pair of
+ * neighbouring rows and each pair of neighbouring columns. The caller states how many rows and columns of
+ * pieces to expect. A column span starts at the leftmost visible pixel among the pieces in that column and ends
+ * at the rightmost, and a row span does the same from top to bottom. Every region in one column therefore has
+ * the same x and width, and every region in one row has the same y and height, even where one piece is smaller
+ * than its neighbours.
  * <p>
- * A caller obtains a {@code ImageSlicer} from {@link #scan(BufferedImage)} and reads each region from
- * {@link #getRegion(int, int)}. Rows and columns are numbered 0 to 2 from the top-left, so
+ * A caller obtains an {@code ImageSlicer} from {@link #scan(BufferedImage, int, int)} and reads each region
+ * from {@link #getRegion(int, int)}. Rows and columns are numbered from 0 at the top-left, so in a 3 by 3 grid
  * {@code getRegion(1, 1)} returns the centre region.
  *
  * <pre>{@code
  * BufferedImage woodTable = ...
  *
- * var slice   = ImageSlicer.scan(woodTable);
+ * var slice   = ImageSlicer.scan(woodTable, 3, 3);
  * var topLeft = slice.getRegion(0, 0);    // x=44, y=43, width=84, height=85
- * var centre  = slice.getRegion(1, 1);     // x=192, y=192, width=64, height=64
+ * var centre  = slice.getRegion(1, 1);    // x=192, y=192, width=64, height=64
  * }</pre>
  *
  * @author Kheagen Haskins
@@ -39,21 +40,19 @@ final class ImageSlicer {
     // ========================================================================================== \\
     //                                           Static                                           \\
     // ========================================================================================== \\
-    private static final int PIECES_PER_AXIS = 3;
-
-    private static final int REGION_COUNT = 9;
-
     /**
-     * Scans an image for the three column spans and three row spans of its nine pieces.
+     * Scans an image for the column spans and row spans of a grid of pieces with the given number of rows and
+     * columns.
      * <p>
      * The method reads the alpha value of every pixel once, and counts a pixel as visible where its alpha is
-     * above zero. A visible pixel marks both its pixel column and its pixel row as used.
-     * {@link #findSpans(boolean[], String)} then finds the three column spans among the used columns, and the
-     * three row spans among the used rows. A single faint pixel in a gap therefore marks that gap as used and
-     * joins the pieces on either side of it, so {@code findSpans} finds only two spans along that axis and the
-     * method throws.
+     * above zero. A visible pixel marks both the column of pixels and the row of pixels that contain it as
+     * used. {@link #findSpans(boolean[], int, String)} then finds {@code columns} column spans among the used
+     * columns of pixels, and {@code rows} row spans among the used rows of pixels. A single faint pixel in a
+     * gap therefore marks that gap as used and joins the pieces on either side of it, so {@code findSpans}
+     * finds one span fewer than expected along that axis and the method throws.
      * <p>
-     * In the 5 by 5 example below, {@code #} marks a visible pixel.
+     * In the 5 by 5 example below, {@code #} marks a visible pixel, and the caller passes 3 rows and 3
+     * columns.
      *
      * <pre>{@code
      *          x = 0 1 2 3 4
@@ -67,23 +66,31 @@ final class ImageSlicer {
      *   usedRows    = T F T F T  ->  rows    [Span(0, 1), Span(2, 1), Span(4, 1)]
      * }</pre>
      *
-     * @param image the 9-slice image to scan
+     * @param image   the image to scan
+     * @param rows    the number of rows of pieces the image must contain, 1 or more
+     * @param columns the number of columns of pieces the image must contain, 1 or more
      *
-     * @return the nine regions of {@code image}
+     * @return the regions of {@code image}, {@code rows} high and {@code columns} wide
      *
      * @throws NullPointerException     if {@code image} is null
-     * @throws IllegalArgumentException if the image does not contain exactly three column spans and three row
+     * @throws IllegalArgumentException if {@code rows} or {@code columns} is less than 1, or if the image does
+     *                                  not contain exactly {@code rows} row spans and {@code columns} column
      *                                  spans
      */
-    static ImageSlicer scan(BufferedImage image) {
+    static ImageSlicer scan(BufferedImage image, int rows, int columns) {
         requireNonNull(image, "image must not be null");
+        if (rows < 1 || columns < 1) {
+            throw new IllegalArgumentException(
+                    "rows and columns must be 1 or more, got %d and %d".formatted(rows, columns)
+            );
+        }
 
         var usedColumns = new boolean[image.getWidth()];
         var usedRows    = new boolean[image.getHeight()];
         for (var y = 0; y < image.getHeight(); y++) {
             for (var x = 0; x < image.getWidth(); x++) {
-                // getRGB returns the pixel as 0xAARRGGBB, so shifting right by 24 leaves only the alpha, 0
-                // to 255.
+                // getRGB returns the pixel as 0xAARRGGBB, so shifting right by 24 leaves only the alpha,
+                // 0 to 255.
                 if ((image.getRGB(x, y) >>> 24) != 0) {
                     usedColumns[x] = true;
                     usedRows[y]    = true;
@@ -91,7 +98,10 @@ final class ImageSlicer {
             }
         }
 
-        return new ImageSlicer(findSpans(usedColumns, "columns"), findSpans(usedRows, "rows"));
+        return new ImageSlicer(
+                findSpans(usedColumns, columns, "columns"),
+                findSpans(usedRows, rows, "rows")
+        );
     }
 
     // ========================================================================================== \\
@@ -117,24 +127,45 @@ final class ImageSlicer {
     //                                        API Methods                                         \\
     // ========================================================================================== \\
     /**
-     * Returns the number of regions in a scanned image, which is always 9 (three rows of three columns).
+     * Returns the number of rows of pieces in the scanned image, as passed to
+     * {@link #scan(BufferedImage, int, int)}.
      *
-     * @return 9
+     * @return the number of rows, 1 or more
+     */
+    public int getRowCount() {
+        return rows.size();
+    }
+
+    /**
+     * Returns the number of columns of pieces in the scanned image, as passed to
+     * {@link #scan(BufferedImage, int, int)}.
+     *
+     * @return the number of columns, 1 or more
+     */
+    public int getColumnCount() {
+        return columns.size();
+    }
+
+    /**
+     * Returns the number of regions in the scanned image, which is {@link #getRowCount()} times
+     * {@link #getColumnCount()}. A 3 by 3 grid has 9 regions.
+     *
+     * @return the number of regions, 1 or more
      */
     public int getRegionCount() {
-        return REGION_COUNT;
+        return rows.size() * columns.size();
     }
 
     /**
      * Returns the source region at the given row and column, as a new {@link Rectangle} that the caller is free
      * to modify.
      *
-     * @param row    the row index, from 0 at the top to 2 at the bottom
-     * @param column the column index, from 0 at the left to 2 at the right
+     * @param row    the row index, from 0 at the top to {@code getRowCount() - 1} at the bottom
+     * @param column the column index, from 0 at the left to {@code getColumnCount() - 1} at the right
      *
      * @return the region's position and size within the scanned image
      *
-     * @throws IndexOutOfBoundsException if {@code row} or {@code column} is outside 0 to 2
+     * @throws IndexOutOfBoundsException if {@code row} or {@code column} is outside the grid
      */
     Rectangle getRegion(int row, int column) {
         var rowSpan    = rows.get(row);
@@ -151,32 +182,34 @@ final class ImageSlicer {
     // ========================================================================================== \\
     //                                       Helper Methods                                       \\
     // ========================================================================================== \\
-
     /**
-     * Returns one {@link Span} for each unbroken sequence of {@code true} entries in {@code used}.
+     * Returns one {@link Span} for each unbroken sequence of {@code true} entries in {@code used}, and checks
+     * that the number of sequences matches {@code expected}.
      * <p>
      * Each entry in {@code used} represents one column of pixels (or one row of pixels), and is {@code true}
      * where that column contains a visible pixel. The {@code false} entries between sequences are the fully
-     * transparent gaps that separate the nine pieces. Each {@code Span} starts at the first index in its
-     * sequence, and its length equals the number of entries in the sequence.
+     * transparent gaps that separate the pieces. Each {@code Span} starts at the first index in its sequence,
+     * and its length equals the number of entries in the sequence.
      * <p>
-     * In the first example below, the last sequence reaches the end of the array.
+     * In the examples below, the last sequence reaches the end of the array. The second call expects one
+     * sequence fewer than the array contains.
      *
      * <pre>{@code
-     * used = F F T T F F T F T T  ->  returns [Span(2, 2), Span(6, 1), Span(8, 2)]
-     * used = F T T F F            ->  throws IllegalArgumentException (1 sequence found)
+     * used = F F T T F F T F T T, expected = 3  ->  returns [Span(2, 2), Span(6, 1), Span(8, 2)]
+     * used = F F T T F F T F T T, expected = 2  ->  throws IllegalArgumentException (3 sequences found)
      * }</pre>
      *
-     * @param used one entry per column of pixels (or row of pixels), {@code true} where it contains a visible
-     *             pixel
-     * @param axis either {@code "columns"} or {@code "rows"}, for the exception message
+     * @param used     one entry per column of pixels (or row of pixels), {@code true} where it contains a
+     *                 visible pixel
+     * @param expected the number of sequences {@code used} must contain
+     * @param axis     either {@code "columns"} or {@code "rows"}, for the exception message
      *
-     * @return the three spans in index order, as an unmodifiable list
+     * @return {@code expected} spans in index order, as an unmodifiable list
      *
-     * @throws IllegalArgumentException if {@code used} does not contain exactly three sequences of {@code true}
-     *                                  entries
+     * @throws IllegalArgumentException if {@code used} does not contain exactly {@code expected} sequences of
+     *                                  {@code true} entries
      */
-    private static List<Span> findSpans(boolean[] used, String axis) {
+    private static List<Span> findSpans(boolean[] used, int expected, String axis) {
         var spans = new ArrayList<Span>();
         var start = -1; // First index of the sequence in progress, or -1 while the loop is in a gap.
 
@@ -195,10 +228,10 @@ final class ImageSlicer {
             }
         }
 
-        if (spans.size() != PIECES_PER_AXIS) {
+        if (spans.size() != expected) {
             throw new IllegalArgumentException(
                     "Expected %d sequences of %s with visible pixels but found %d".formatted(
-                            PIECES_PER_AXIS, axis, spans.size()
+                            expected, axis, spans.size()
                     )
             );
         }
