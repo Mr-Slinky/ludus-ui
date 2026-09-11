@@ -21,9 +21,11 @@ import static java.util.Objects.requireNonNull;
  * {@code getRegion(1, 1)} returns the centre region.
  *
  * <pre>{@code
- * var slice = ImageSlicer.scan(woodTable);
+ * BufferedImage woodTable = ...
+ *
+ * var slice   = ImageSlicer.scan(woodTable);
  * var topLeft = slice.getRegion(0, 0);    // x=44, y=43, width=84, height=85
- * var centre = slice.getRegion(1, 1);     // x=192, y=192, width=64, height=64
+ * var centre  = slice.getRegion(1, 1);     // x=192, y=192, width=64, height=64
  * }</pre>
  *
  * @author Kheagen Haskins
