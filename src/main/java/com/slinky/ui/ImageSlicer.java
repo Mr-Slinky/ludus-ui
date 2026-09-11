@@ -47,9 +47,12 @@ final class ImageSlicer {
      * The method reads the alpha value of every pixel once, and counts a pixel as visible where its alpha is
      * above zero. A visible pixel marks both the column of pixels and the row of pixels that contain it as
      * used. {@link #findSpans(boolean[], int, String)} then finds {@code columns} column spans among the used
-     * columns of pixels, and {@code rows} row spans among the used rows of pixels. A single faint pixel in a
-     * gap therefore marks that gap as used and joins the pieces on either side of it, so {@code findSpans}
-     * finds one span fewer than expected along that axis and the method throws.
+     * columns of pixels, and {@code rows} row spans among the used rows of pixels.
+     * <p>
+     * A single faint pixel in a gap therefore changes the result. Where the pixel touches a piece, it widens
+     * the span of that piece by one pixel. Where the pixel stands clear of the pieces on both sides, it forms a
+     * span of its own, so {@code findSpans} finds one span more than expected along that axis and the method
+     * throws.
      * <p>
      * In the 5 by 5 example below, {@code #} marks a visible pixel, and the caller passes 3 rows and 3
      * columns.
