@@ -40,6 +40,10 @@ public class SmallButton extends JButton {
     private static final int REGULAR_BASE_HEIGHT = 14;
     private static final int PRESSED_BASE_HEIGHT = 9;
 
+    // How far below the centre of the button's top the icon is drawn. This is a decision made by eye, since the
+    // exact centre looks slightly high.
+    private static final int ICON_DROP = 3;
+
     /**
      * Creates a blue round button showing the given icon.
      *
@@ -286,7 +290,7 @@ public class SmallButton extends JButton {
         try {
             content.translate(
                     top.x + (top.width / 2) - (getWidth() / 2),
-                    top.y + (top.height / 2) - (getHeight() / 2)
+                    top.y + (top.height / 2) - (getHeight() / 2) + ICON_DROP
             );
             super.paintComponent(content);
         } finally {
