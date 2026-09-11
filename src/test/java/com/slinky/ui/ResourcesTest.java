@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -19,9 +20,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * {@code REGULAR_PAPER}, read straight from the classpath.
  *
  * <p>
- * <b>TDD state.</b> Written before {@code normalise} was implemented. Covered: a leading slash, no leading slash,
- * backslashes, mixed slashes and repeated slashes; a path with no resource behind it; a null path; and empty and
- * blank paths.
+ * <b>TDD state.</b> Written before {@code normalise} and {@code readImage} were implemented. Covered: a leading
+ * slash, no leading slash, backslashes, mixed slashes and repeated slashes; a path with no resource behind it; a
+ * null path; empty and blank paths; and reading an image, with and without a resource behind the path.
  *
  * @author Claude Code
  * @version 1.0.0
@@ -73,6 +74,23 @@ class ResourcesTest {
         var ex = assertThrows(IllegalArgumentException.class, () -> Resources.getResource(path));
 
         assertEquals("path must not be blank", ex.getMessage());
+    }
+
+    @Test
+    void testReadImage_withValidArgs_ReturnsDecodedImage() {
+        var image = Resources.readImage(REGULAR_PAPER);
+
+        assertAll(
+                () -> assertEquals(320, image.getWidth()),
+                () -> assertEquals(320, image.getHeight())
+        );
+    }
+
+    @Test
+    void testReadImage_withInvalidArgs_ThrowsResourceNotFoundException() {
+        var ex = assertThrows(ResourceNotFoundException.class, () -> Resources.readImage("/assets/missing.png"));
+
+        assertEquals("/assets/missing.png could not be located", ex.getMessage());
     }
 
     private static byte[] readBytes(String absolutePath) throws IOException {

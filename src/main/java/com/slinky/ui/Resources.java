@@ -1,6 +1,10 @@
 package com.slinky.ui;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.util.regex.Pattern;
 
 import static java.util.Objects.requireNonNull;
@@ -92,6 +96,26 @@ final class Resources {
         if (in == null) throw ResourceNotFoundException.rnf(path);
 
         return in;
+    }
+
+    /**
+     * Reads the image at the given path, which {@link #getResource(String)} resolves.
+     *
+     * @param path the resource path, with or without a leading slash
+     *
+     * @return the decoded image, or null where no installed {@link ImageIO} reader supports the file's format
+     *
+     * @throws NullPointerException      if {@code path} is null
+     * @throws IllegalArgumentException  if {@code path} is empty or contains only whitespace
+     * @throws ResourceNotFoundException if the classpath contains no resource at {@code path}
+     * @throws UncheckedIOException      if reading the resource fails
+     */
+    public static BufferedImage readImage(String path) {
+        try (var in = getResource(path)) {
+            return ImageIO.read(in);
+        } catch (IOException ex) {
+            throw new UncheckedIOException("Failed to read image at " + path, ex);
+        }
     }
 
     // ========================================================================================== \\

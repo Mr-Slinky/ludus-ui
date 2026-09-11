@@ -17,7 +17,7 @@ import java.awt.image.BufferedImage;
  * {@link #getPreferredSize()}. Whatever is behind the panel shows through the see-through parts of the image.
  *
  * <pre>{@code
- * var table = LPanel.wood(3, 1);    // preferred size 360 x 252
+ * var table = Display.wood(3, 1);    // preferred size 360 x 252
  * frame.add(table);
  * frame.pack();
  *
@@ -31,7 +31,7 @@ import java.awt.image.BufferedImage;
  *         Last modified: 2026-09-11
  * @since 1.0.0
  */
-public class LPanel extends JPanel {
+public class Display extends JPanel {
 
     // ========================================================================================== \\
     //                                           Static                                           \\
@@ -49,8 +49,8 @@ public class LPanel extends JPanel {
      *
      * @throws IllegalArgumentException if either scale is negative
      */
-    public static LPanel wood(int horizontalScale, int verticalScale) {
-        return new LPanel(horizontalScale, verticalScale, Type.WOOD.getPath());
+    public static Display wood(int horizontalScale, int verticalScale) {
+        return new Display(horizontalScale, verticalScale, Type.WOOD.getPath());
     }
 
     /**
@@ -64,8 +64,8 @@ public class LPanel extends JPanel {
      *
      * @throws IllegalArgumentException if either scale is negative
      */
-    public static LPanel regularPaper(int horizontalScale, int verticalScale) {
-        return new LPanel(horizontalScale, verticalScale, Type.REGULAR_PAPER.getPath());
+    public static Display regularPaper(int horizontalScale, int verticalScale) {
+        return new Display(horizontalScale, verticalScale, Type.REGULAR_PAPER.getPath());
     }
 
     /**
@@ -79,8 +79,8 @@ public class LPanel extends JPanel {
      *
      * @throws IllegalArgumentException if either scale is negative
      */
-    public static LPanel specialPaper(int horizontalScale, int verticalScale) {
-        return new LPanel(horizontalScale, verticalScale, Type.SPECIAL_PAPER.getPath());
+    public static Display specialPaper(int horizontalScale, int verticalScale) {
+        return new Display(horizontalScale, verticalScale, Type.SPECIAL_PAPER.getPath());
     }
 
     // ========================================================================================== \\
@@ -122,7 +122,7 @@ public class LPanel extends JPanel {
     // ========================================================================================== \\
     //                                           Fields                                           \\
     // ========================================================================================== \\
-    private final Renderer renderer;
+    private final SliceRenderer renderer;
 
     private int hScale;
     private int vScale;
@@ -143,8 +143,8 @@ public class LPanel extends JPanel {
      *                                             image does not contain nine pieces in three rows and three
      *                                             columns with fully transparent gaps between them
      */
-    LPanel(int hScale, int vScale, String srcPath) {
-        this(hScale, vScale, Renderer.load(srcPath, GRID_SIZE, GRID_SIZE));
+    Display(int hScale, int vScale, String srcPath) {
+        this(hScale, vScale, SliceRenderer.load(srcPath, GRID_SIZE, GRID_SIZE));
     }
 
     /**
@@ -159,12 +159,12 @@ public class LPanel extends JPanel {
      *                                  not contain nine pieces in three rows and three columns with fully
      *                                  transparent gaps between them
      */
-    LPanel(int hScale, int vScale, BufferedImage src) {
-        this(hScale, vScale, new Renderer(src, GRID_SIZE, GRID_SIZE));
+    Display(int hScale, int vScale, BufferedImage src) {
+        this(hScale, vScale, new SliceRenderer(src, GRID_SIZE, GRID_SIZE));
     }
 
-    private LPanel(int hScale, int vScale, Renderer renderer) {
-        super(true);
+    private Display(int hScale, int vScale, SliceRenderer renderer) {
+        super(true); // double buffered = true
         if (hScale < 0 || vScale < 0) {
             throw new IllegalArgumentException(
                     "hScale and vScale must be 0 or more, got %d and %d".formatted(hScale, vScale)
@@ -176,7 +176,7 @@ public class LPanel extends JPanel {
         this.vScale   = vScale;
 
         // Tells Swing to draw whatever is behind the panel first, so it shows through the see-through parts of
-        // the image. A JPanel is opaque by default, which would skip that step.
+        // the image.
         setOpaque(false);
     }
 
