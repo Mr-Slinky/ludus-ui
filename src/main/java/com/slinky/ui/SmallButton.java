@@ -4,18 +4,21 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * A {@link JButton} that draws itself from one of the small round or square button images, at the image's own
  * size.
  * <p>
  * Each button comes as a regular image and a pressed image on a canvas of the same size. The button shows the
- * pressed image while the user holds the mouse down over it, and the regular image otherwise. It centres its
- * icon or label on the visible part of the image it is showing, so the icon sinks with the button when
- * pressed.
+ * pressed image while the user holds the mouse down over it, and the regular image otherwise.
+ * <p>
+ * A caller picks the icon drawn on the button from {@link Symbol}. The button draws the icon at its own size,
+ * centred on the top of the button in the image it is showing, above the base that the art shows underneath.
+ * The icon therefore sinks with the button when pressed.
  *
  * <pre>{@code
- * var close = SmallButton.redSquare();    // preferred size 128 x 128
- * close.setIcon(new ImageIcon(cross));
+ * var close = SmallButton.redSquare(SmallButton.Symbol.CROSS);    // preferred size 128 x 128
  * close.addActionListener(e -> dispose());
  * }</pre>
  *
@@ -32,45 +35,127 @@ public class SmallButton extends JButton {
     // ========================================================================================== \\
     private static final String ROOT_DIR = "/assets/ui-elements/buttons/";
 
+    // The bottom rows of every small button image show the base of the button, below the dark line that ends its
+    // top. Both heights are measured from the art, and the icon centres on the top of the button above them.
+    private static final int REGULAR_BASE_HEIGHT = 14;
+    private static final int PRESSED_BASE_HEIGHT = 9;
+
     /**
-     * Creates a blue round button.
+     * Creates a blue round button showing the given icon.
      *
-     * @return a new button, with no label or icon
+     * @param symbol the icon drawn on the button
+     *
+     * @return a new button
+     *
+     * @throws NullPointerException if {@code symbol} is null
      */
-    public static SmallButton blueRound() {
-        return new SmallButton(Colour.BLUE, Type.ROUND);
+    public static SmallButton blueRound(Symbol symbol) {
+        return new SmallButton(Colour.BLUE, Type.ROUND, symbol);
     }
 
     /**
-     * Creates a blue square button.
+     * Creates a blue square button showing the given icon.
      *
-     * @return a new button, with no label or icon
+     * @param symbol the icon drawn on the button
+     *
+     * @return a new button
+     *
+     * @throws NullPointerException if {@code symbol} is null
      */
-    public static SmallButton blueSquare() {
-        return new SmallButton(Colour.BLUE, Type.SQUARE);
+    public static SmallButton blueSquare(Symbol symbol) {
+        return new SmallButton(Colour.BLUE, Type.SQUARE, symbol);
     }
 
     /**
-     * Creates a red round button.
+     * Creates a red round button showing the given icon.
      *
-     * @return a new button, with no label or icon
+     * @param symbol the icon drawn on the button
+     *
+     * @return a new button
+     *
+     * @throws NullPointerException if {@code symbol} is null
      */
-    public static SmallButton redRound() {
-        return new SmallButton(Colour.RED, Type.ROUND);
+    public static SmallButton redRound(Symbol symbol) {
+        return new SmallButton(Colour.RED, Type.ROUND, symbol);
     }
 
     /**
-     * Creates a red square button.
+     * Creates a red square button showing the given icon.
      *
-     * @return a new button, with no label or icon
+     * @param symbol the icon drawn on the button
+     *
+     * @return a new button
+     *
+     * @throws NullPointerException if {@code symbol} is null
      */
-    public static SmallButton redSquare() {
-        return new SmallButton(Colour.RED, Type.SQUARE);
+    public static SmallButton redSquare(Symbol symbol) {
+        return new SmallButton(Colour.RED, Type.SQUARE, symbol);
     }
 
     // ========================================================================================== \\
     //                                           Nested                                           \\
     // ========================================================================================== \\
+    /**
+     * The icons a small button can show, each defined by the name of its 64 by 64 image in
+     * {@code /assets/ui-elements/icons/}.
+     */
+    public enum Symbol {
+
+        /** A cog, from {@code cog.png}. */
+        COG("cog"),
+
+        /** A gold coin, from {@code coin.png}. */
+        COIN("coin"),
+
+        /** An information sign, from {@code info.png}. */
+        INFO("info"),
+
+        /** An arrow pointing left, from {@code left-arrow.png}. */
+        LEFT_ARROW("left-arrow"),
+
+        /** A log of wood, from {@code log.png}. */
+        LOG("log"),
+
+        /** A mallet, from {@code mallet.png}. */
+        MALLET("mallet"),
+
+        /** A cut of meat, from {@code meat.png}. */
+        MEAT("meat"),
+
+        /** A musical note, from {@code music.png}. */
+        MUSIC("music"),
+
+        /** A play triangle, from {@code play.png}. */
+        PLAY("play"),
+
+        /** A shield, from {@code shield.png}. */
+        SHIELD("shield"),
+
+        /** A sword, from {@code sword.png}. */
+        SWORD("sword"),
+
+        /** A cross, from {@code cross.png}. */
+        CROSS("cross");
+
+        private static final String ROOT_DIR = "/assets/ui-elements/icons/";
+
+        private final String fileName;
+
+        Symbol(String fileName) {
+            this.fileName = fileName;
+        }
+
+        /**
+         * Returns the classpath path of this icon, such as {@code "/assets/ui-elements/icons/cog.png"} for
+         * {@link #COG}.
+         *
+         * @return the absolute classpath path, starting with {@code /}
+         */
+        String getPath() {
+            return ROOT_DIR + fileName + ".png";
+        }
+    }
+
     /**
      * The shapes a small button comes in, each defined by the part of its file names that follows the colour.
      */
@@ -112,26 +197,28 @@ public class SmallButton extends JButton {
     // ========================================================================================== \\
     private final BufferedImage regularImage;
     private final BufferedImage pressedImage;
-    private final Rectangle     regularFace;
-    private final Rectangle     pressedFace;
+    private final Rectangle     regularTop;
+    private final Rectangle     pressedTop;
 
     // ========================================================================================== \\
     //                                       Constructor(s)                                       \\
     // ========================================================================================== \\
     /**
-     * Creates a button in the given colour and shape, with no label or icon.
+     * Creates a button in the given colour and shape, showing the given icon.
      *
      * @param colour the colour of the button
      * @param type   the shape of the button
+     * @param symbol the icon drawn on the button
+     *
+     * @throws NullPointerException if {@code symbol} is null
      */
-    SmallButton(Colour colour, Type type) {
+    SmallButton(Colour colour, Type type, Symbol symbol) {
+        super(new ImageIcon(Resources.readImage(requireNonNull(symbol, "symbol must not be null").getPath())));
         this.regularImage = Resources.readImage(buildPath(colour, type, "regular"));
         this.pressedImage = Resources.readImage(buildPath(colour, type, "pressed"));
 
-        // A 1 by 1 scan returns the bounds of every visible pixel, which is the button face the icon centres
-        // on.
-        this.regularFace = ImageSlicer.scan(regularImage, 1, 1).getRegion(0, 0);
-        this.pressedFace = ImageSlicer.scan(pressedImage, 1, 1).getRegion(0, 0);
+        this.regularTop   = findTop(regularImage, REGULAR_BASE_HEIGHT);
+        this.pressedTop   = findTop(pressedImage, PRESSED_BASE_HEIGHT);
 
         // Switches off everything the look and feel draws apart from the icon and label, which paintComponent
         // replaces.
@@ -182,24 +269,24 @@ public class SmallButton extends JButton {
 
     /**
      * Draws the regular or the pressed image whole from the top-left corner, then the icon and label centred on
-     * the visible part of that image.
+     * the top of the button in that image.
      *
      * @param g the graphics context that Swing passes in for this paint
      */
     @Override
     protected void paintComponent(Graphics g) {
         var showPressed = isShowingPressed();
-        var face        = showPressed ? pressedFace : regularFace;
+        var top         = showPressed ? pressedTop : regularTop;
 
         g.drawImage(showPressed ? pressedImage : regularImage, 0, 0, null);
 
         // The look and feel centres the icon on the whole button, so moving the graphics by the gap between
-        // the two centres puts the icon in the middle of the visible face instead.
+        // the two centres puts the icon in the middle of the button's top instead.
         var content = g.create();
         try {
             content.translate(
-                    face.x + (face.width / 2) - (getWidth() / 2),
-                    face.y + (face.height / 2) - (getHeight() / 2)
+                    top.x + (top.width / 2) - (getWidth() / 2),
+                    top.y + (top.height / 2) - (getHeight() / 2)
             );
             super.paintComponent(content);
         } finally {
@@ -210,6 +297,20 @@ public class SmallButton extends JButton {
     // ========================================================================================== \\
     //                                       Helper Methods                                       \\
     // ========================================================================================== \\
+    /**
+     * Returns the part of an image that shows the top of the button, which is the bounds of every visible pixel
+     * without the base rows at the bottom. For the regular images this runs from row 17 to row 96.
+     *
+     * @param image      the regular or the pressed image
+     * @param baseHeight the number of rows at the bottom of the visible pixels that show the base
+     *
+     * @return the position and size of the button's top, in image coordinates
+     */
+    private static Rectangle findTop(BufferedImage image, int baseHeight) {
+        var visible = ImageSlicer.scan(image, 1, 1).getRegion(0, 0); // The bounds of every visible pixel.
+        return new Rectangle(visible.x, visible.y, visible.width, visible.height - baseHeight);
+    }
+
     /**
      * Returns the classpath path of one image, such as
      * {@code "/assets/ui-elements/buttons/smallredsquarebutton_pressed.png"}.
