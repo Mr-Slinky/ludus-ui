@@ -1,4 +1,4 @@
-package com.slinky.ui;
+package com.slinky.ludus.ui;
 
 import javax.swing.*;
 import java.awt.*;
@@ -53,7 +53,7 @@ public class SmallButton extends JButton {
      *
      * @throws NullPointerException if {@code symbol} is null
      */
-    public static SmallButton blueRound(Symbol symbol) {
+    public static SmallButton blueRound(Symbol symbol, double radians) {
         return new SmallButton(Colour.BLUE, Type.ROUND, symbol);
     }
 
@@ -66,7 +66,7 @@ public class SmallButton extends JButton {
      *
      * @throws NullPointerException if {@code symbol} is null
      */
-    public static SmallButton blueSquare(Symbol symbol) {
+    public static SmallButton blueSquare(Symbol symbol, double radians) {
         return new SmallButton(Colour.BLUE, Type.SQUARE, symbol);
     }
 
@@ -79,7 +79,7 @@ public class SmallButton extends JButton {
      *
      * @throws NullPointerException if {@code symbol} is null
      */
-    public static SmallButton redRound(Symbol symbol) {
+    public static SmallButton redRound(Symbol symbol, double radians) {
         return new SmallButton(Colour.RED, Type.ROUND, symbol);
     }
 
@@ -92,7 +92,7 @@ public class SmallButton extends JButton {
      *
      * @throws NullPointerException if {@code symbol} is null
      */
-    public static SmallButton redSquare(Symbol symbol) {
+    public static SmallButton redSquare(Symbol symbol, double radians) {
         return new SmallButton(Colour.RED, Type.SQUARE, symbol);
     }
 

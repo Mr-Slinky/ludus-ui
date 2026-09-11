@@ -1,4 +1,4 @@
-package com.slinky.ui;
+package com.slinky.ludus.ui;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

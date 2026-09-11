@@ -1,4 +1,4 @@
-package com.slinky.ui;
+package com.slinky.ludus.ui;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;

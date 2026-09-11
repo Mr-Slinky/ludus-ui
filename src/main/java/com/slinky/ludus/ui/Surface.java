@@ -1,4 +1,4 @@
-package com.slinky.ui;
+package com.slinky.ludus.ui;
 
 import javax.swing.*;
 import java.awt.*;
